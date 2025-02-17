@@ -1,7 +1,7 @@
 import os.path
 
-from .graph import PangenomeGraph
-from .utils import _node_convert, load_graph_from_pkl, save_graph_to_pkl
+from graph_var.graph import PangenomeGraph
+from graph_var.utils import _node_convert, load_graph_from_pkl, save_graph_to_pkl
 import re
 import numpy as np
 from tqdm import tqdm
