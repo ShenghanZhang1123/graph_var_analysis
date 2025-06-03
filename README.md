@@ -1,0 +1,129 @@
+## General pipeline for individual chromosome
+1. Identify the first node of each chromosome in the entire HPRC GFA file
+   - Use `python3 find_node_in_each_chr.py --gfa-path /path/to/entire_hprc.gfa` to identify the first node of each chromosome in the entire GFA file.
+   - Set `--compressed True` if the input GFA file is compressed.
+   - Example output: `[('chr1\t', '3464'), ('chr10\t', '6952228'), ('chr11\t', '11418452'), ('chr12\t', '15038259'), ('chr13\t', '18590476'), ('chr14\t', '21708966'), ('chr15\t', '25873214'), ('chr16\t', '28963621'), ('chr17\t', '31754600'), ('chr18\t', '34655949'), ('chr19\t', '36942952'), ('chr2\t', '39623599'), ('chr20\t', '47611940'), ('chr21\t', '50760588'), ('chr22\t', '53303057'), ('chr3\t', '56139384'), ('chr4\t', '61851828'), ('chr5\t', '67361994'), ('chr6\t', '72681044'), ('chr7\t', '77279384'), ('chr8\t', '82425070'), ('chr9\t', '86679753'), ('chrX\t', '91497385'), ('chrY\t', '94762478')]`
+2. Extract the GFA file for each chromosome
+   - Example for extracting chr1.gfa from the entire gfa: `gfatools view -l 3464 -r 1000000000 hprc-v1.1-mc-grch38.gfa.gz > chr1.gfa`
+3. Construct the pangenome graph for each chromosome
+   - See in section `Graph construction (graph.py)`
+4. Writing VCF file for each chromosome
+   - See in section`Writing VCF`
+
+
+## For different versions of HPRC pangenome graphs, the input and output directories are defined as:
+<pre># Preset directories
+# 'v1' for version 1 pangenome graph, 'v2' for version 2
+version = 'v1'
+# 'GRCh38' for GRCh38 reference, 'CHM13' for CHM13 reference
+ref_name = 'GRCh38'
+
+graph_obj_dir = f"/n/data1/hms/dbmi/oconnor/lab/shz311/pangenome/Graph_objs_{version}{'_chm13' if ref_name == 'CHM13' else ''}"
+raw_vcf_dir = f"/n/data1/hms/dbmi/oconnor/lab/shz311/pangenome/VCFs_chr"
+graph_vcf_dir = f"/n/data1/hms/dbmi/oconnor/lab/shz311/pangenome/VCFs_{version}{'_chm13' if ref_name == 'CHM13' else ''}"
+
+ref_tree_dir = f"/n/data1/hms/dbmi/oconnor/lab/shz311/pangenome/Data/reference_tree_gfa_{version}{'_chm13' if ref_name == 'CHM13' else ''}"
+gfa_dir = f"/n/data1/hms/dbmi/oconnor/lab/shz311/pangenome/Data/chromosome_gfa_{version}{'_chm13' if ref_name == 'CHM13' else ''}"
+snarl_dir = f"/n/data1/hms/dbmi/oconnor/lab/shz311/pangenome/Data/chr_snarls_{version}{'_chm13' if ref_name == 'CHM13' else ''}"
+bubble_summary_dir = f"/n/data1/hms/dbmi/oconnor/lab/shz311/pangenome/Bubble_summary_{version}{'_chm13' if ref_name == 'CHM13' else ''}"
+
+var_summary_dir = f"/n/data1/hms/dbmi/oconnor/lab/shz311/pangenome/Stats_chr_{version}{'_chm13' if ref_name == 'CHM13' else ''}"
+data_vis_dir = f"/n/data1/hms/dbmi/oconnor/lab/shz311/pangenome/Data_visualization_{version}{'_chm13' if ref_name == 'CHM13' else ''}"
+chart_dir = f"/n/data1/hms/dbmi/oconnor/lab/shz311/pangenome/Charts_{version}{'_chm13' if ref_name == 'CHM13' else ''}"
+
+region_dir = f"/n/data1/hms/dbmi/oconnor/lab/shz311/pangenome/Region_files"
+
+# Just set to AT for representing we use snarls file for identifying which node belongs to which bubble
+mode = 'AT'
+exclude_terminus = True </pre>
+
+
+## Graph construction (graph.py)
+ - Create a graph from a GFA file
+   - Use `G = PangenomeGraph.from_gfa(gfa_file)` for constructing pangenome graph from gfa
+   - Use `G = PangenomeGraph.from_gfa_line_by_line(gfa_file)` for memory efficient construction
+   - Parameter `compressed: bool` for both functions to specify whether the gfa file is compressed 
+
+## Save and load the entire pangenome graph to pickle file
+### I/O Functions are defined in utils.py
+
+Saving:
+ - Use `save_graph_to_pkl(G, output_path, compressed=False)` for saving pangenome graph to pickle file
+ - Parameter `compressed: bool` for specifying whether the pickle file will be compressed 
+
+Loading:
+ - Use `G = load_graph_from_pkl(input_path, compressed=False)` for loading pangenome graph from pickle file
+ - Parameter `compressed: bool` for specifying whether the pickle file is compressed
+
+Output directory:
+ - Graph pickle files are stored in `graph_obj_dir`
+
+## Writing VCF
+ - Write a VCF file from a PangenomeGraph object
+   <pre>G.write_vcf(gfa_path, vcf_path, chr_id)
+   
+   Main parameters:
+   1. gfa_path: path to original gfa file used to construct pangenome graph
+   2. vcf_path: path to output vcf file
+   3. chr_id: name of chromosome in the format like "chr1" will be put in the CHROM column
+   
+   Additional parameters:
+   1. exclude_terminus: whether to exclude the terminus variant edges, default is True 
+   2. size_threshold: the truncation length of ref and alt sequence, default is None
+   3. check_degenerate: whether to exclude variants whose ref and alt alleles are identical, default is False
+   4. log_path: path to log file, default is None</pre>
+
+ - Output VCF file directory: `graph_vcf_dir`
+
+## Jupyter notebooks for downstream analysis
+
+### Preset parameters
+- chr_set: autosome, X, Y
+
+### File 1: generating_data_analysis.ipynb for generating data for further analysis and visualization
+   #### Part 1: Summary for all variant edges
+  - Analysis 1 - Summary for all variant edges
+    - Summary for all variant edges (varaint type, large/small, linear/off-linear)
+    - Output path: `f"{var_summary_dir}/comprehensive_variant_summary_for_chr{i}.csv"`
+  - Analysis 2 - Summary for all TR variant edges (variant type, large/small, linear/off-linear)
+    - Output path: `f"{var_summary_dir}/comprehensive_repeated_variant_summary_for_chr{i}.csv"`
+   #### Part 2: Region or allele count based variant summary
+  - Analysis 3 - Region based variant type summary
+    - Summarise count of different variant types among easy, segdup, other difficult regions
+    - Output path: `f"{data_vis_dir}/variant_summary_by_region_{chr_set}.csv"`
+  - Analysis 4 - Region based SNP comparison between ourvcf and vcfwave/rawvcf
+    - Summarise the SNP overlapping and supplementary set between ourvcf and rawvcf
+    - Output path: `f"{data_vis_dir}/snp_region_summary_ourvcf_vs_vcfwave_{chr_set}.csv"`
+  - Analysis 5 - SNP summary based on allele count
+    - Summarise the SNP overlapping and supplementary set between ourvcf and rawvcf
+    - Output path: `f"{data_vis_dir}/snp_ac_range_summary_ourvcf_vs_vcfwave_{chr_set}.csv"`
+  - Analysis 6 - Annotate variants based on the TR region bed file
+    - Summarise all variants based on the TR region, including STR, VNTR, etc.
+    - Output path: `f"{var_summary_dir}/TR_regions_var_comprehensive_summary_all_chrs_{chr_set}.xlsx"`
+  #### Part 3: Triallelic/Multiallelic bubble analysis
+  - Analysis 7 - Generating table for mapping bubble id to within variant edges
+     - Output path: `f"{bubble_summary_dir}/bubble_variant_counts_chr{chr}_AT.tsv`
+  - Analysis 8 - Generating table for mapping bubble id to number of variants, number of alt alleles in rawvcf and vcfwave
+     - Output path: `f"{bubble_summary_dir}/bubble_allele_summary_chr{chr}.tsv`
+  - Analysis 9 - Generating table for extracting triallelic variants
+     - Output path: `f"{bubble_summary_dir}/triallelic_variants_chr{i}.tsv`
+  - Analysis 10 - Categorize triallelic bubbles
+     - Output path: `f"{bubble_summary_dir}/bubble_triallelic_chr{i}.tsv"`
+  - Analysis 11 - Classify superbubbles
+     - Output path: `f"{bubble_summary_dir}/superbubble_type_chr{i}.tsv"`
+
+### File 2: generate_table.ipynb
+   - Generate all our supplementary tables in our paper
+
+### File 3: generate_figure.ipynb
+   - Generate all our main figures and supplementary figures in our paper
+
+### File 4: statistic.ipynb
+   - Some extra analysis or statistics for our paper, for example:
+     - SNP count in HLA-A large insertion
+     - Length of non-GRCh38 sequence
+     - Number of nodes, edges, walks for the whole gfa graph
+
+### File 5: special_region_analysis.ipynb
+   - File for generating simplified graph for all special regions HLA-A, RHD, C4, CYP2D6
+
