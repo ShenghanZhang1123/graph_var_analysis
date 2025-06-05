@@ -1,11 +1,11 @@
 ## General pipeline for individual chromosome
-1. Identify the first node of each chromosome in the entire HPRC GFA file
+1. Identify the first node of each chromosome in the entire HPRC pangenome GFA file
    - Use `python3 find_node_in_each_chr.py --gfa-path /path/to/entire_hprc.gfa` to identify the first node of each chromosome in the entire GFA file.
    - Set `--compressed True` if the input GFA file is compressed.
    - Example output: `[('chr1\t', '3464'), ('chr10\t', '6952228'), ('chr11\t', '11418452'), ('chr12\t', '15038259'), ('chr13\t', '18590476'), ('chr14\t', '21708966'), ('chr15\t', '25873214'), ('chr16\t', '28963621'), ('chr17\t', '31754600'), ('chr18\t', '34655949'), ('chr19\t', '36942952'), ('chr2\t', '39623599'), ('chr20\t', '47611940'), ('chr21\t', '50760588'), ('chr22\t', '53303057'), ('chr3\t', '56139384'), ('chr4\t', '61851828'), ('chr5\t', '67361994'), ('chr6\t', '72681044'), ('chr7\t', '77279384'), ('chr8\t', '82425070'), ('chr9\t', '86679753'), ('chrX\t', '91497385'), ('chrY\t', '94762478')]`
-2. Extract the GFA file for each chromosome
+2. Extract the pangenome GFA file for each chromosome
    - Example for extracting chr1.gfa from the entire gfa: `gfatools view -l 3464 -r 1000000000 hprc-v1.1-mc-grch38.gfa.gz > chr1.gfa`
-3. Construct the pangenome graph for each chromosome
+3. Construct the pangenome graph object for each chromosome's gfa file
    - See in section `Graph construction (graph.py)`
 4. Writing VCF file for each chromosome
    - See in section`Writing VCF`
